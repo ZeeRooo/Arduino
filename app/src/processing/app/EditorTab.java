@@ -111,6 +111,7 @@ public class EditorTab extends JPanel implements SketchFile.TextStorage {
     applyPreferences();
     add(scrollPane, BorderLayout.CENTER);
     editor.base.addEditorFontResizeMouseWheelListener(textarea);
+    textarea.autoCompleteText();
   }
 
   private RSyntaxDocument createDocument(String contents) {

@@ -4,6 +4,7 @@
 	<classpathentry kind="src" path="app/test"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="app/lib/apple.jar"/>
+	<classpathentry kind="lib" path="app/lib/autocomplete-3.0.0.jar"/>
 	<classpathentry kind="lib" path="app/lib/ecj.jar"/>
 	<classpathentry kind="lib" path="app/test-lib/junit-4.11.jar"/>
 	<classpathentry kind="lib" path="app/test-lib/fest-assert-1.2.jar"/>

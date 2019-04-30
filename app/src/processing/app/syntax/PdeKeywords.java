@@ -25,6 +25,9 @@
 package processing.app.syntax;
 
 import org.apache.commons.compress.utils.IOUtils;
+import org.fife.ui.autocomplete.BasicCompletion;
+import org.fife.ui.autocomplete.Completion;
+import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.rsyntaxtextarea.TokenMap;
 import org.fife.ui.rsyntaxtextarea.TokenTypes;
 import processing.app.Base;
@@ -36,10 +39,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
 
 public class PdeKeywords {
 
@@ -65,6 +71,10 @@ public class PdeKeywords {
   // lookup table that maps keywords to their html reference pages
   private final Map<String, String> keywordToReference;
 
+  // Save the keywords in an ArrayList to use the AutoCompletion feature
+  private ArrayList<KeywordModel> keywords = new ArrayList<KeywordModel>();
+  private short position;
+
   public PdeKeywords() {
     this.keywordTokenType = new TokenMap();
     this.keywordOldToken = new HashMap<>();
@@ -75,28 +85,33 @@ public class PdeKeywords {
   /**
    * Handles loading of keywords file.
    * <p/>
-   * Uses getKeywords()  method because that's part of the
-   * TokenMarker classes.
+   * Uses getKeywords() method because that's part of the TokenMarker classes.
    * <p/>
-   * It is recommended that a # sign be used for comments
-   * inside keywords.txt.
+   * It is recommended that a # sign be used for comments inside keywords.txt.
    */
   public void reload() {
     try {
-      parseKeywordsTxt(new File(BaseNoGui.getContentFile("lib"), "keywords.txt"));
+      parseKeywordsTxt(new File(BaseNoGui.getContentFile("lib"),
+          "keywords.txt"));
       TargetPlatform tp = BaseNoGui.getTargetPlatform();
       if (tp != null) {
         File platformKeywords = new File(tp.getFolder(), "keywords.txt");
-        if (platformKeywords.exists()) parseKeywordsTxt(platformKeywords);
+        if (platformKeywords.exists())
+          parseKeywordsTxt(platformKeywords);
       }
-      for (UserLibrary lib : BaseNoGui.librariesIndexer.getInstalledLibraries()) {
+      for (UserLibrary lib : BaseNoGui.librariesIndexer
+          .getInstalledLibraries()) {
         File keywords = new File(lib.getInstalledFolder(), "keywords.txt");
         if (keywords.exists()) {
           parseKeywordsTxt(keywords);
         }
       }
     } catch (Exception e) {
-      Base.showError("Problem loading keywords", "Could not load keywords.txt,\nplease re-install Arduino.", e);
+      e.printStackTrace();
+
+      Base.showError("Problem loading keywords",
+                     "Could not load keywords.txt,\nplease re-install Arduino.",
+                     e);
       System.exit(1);
     }
   }
@@ -104,36 +119,42 @@ public class PdeKeywords {
   private void parseKeywordsTxt(File input) throws Exception {
     BufferedReader reader = null;
     try {
-      reader = new BufferedReader(new InputStreamReader(new FileInputStream(input)));
+      reader = new BufferedReader(
+          new InputStreamReader(new FileInputStream(input)));
 
       String line;
       while ((line = reader.readLine()) != null) {
-        //System.out.println("line is " + line);
+        // System.out.println("line is " + line);
         // in case there's any garbage on the line
         line = line.trim();
         if (line.length() == 0 || line.startsWith("#")) {
           continue;
         }
-
         String pieces[] = line.split("\t");
 
-        String keyword = pieces[0].trim();
-        if (keyword.startsWith("\\#")) {
-          keyword = keyword.replace("\\#", "#");
+        keywords.add(position, new KeywordModel(pieces[0].trim()));
+        if (keywords.get(position).getKeyword().startsWith("\\#")) {
+          keywords.add(position, new KeywordModel(
+              keywords.get(position).getKeyword().replace("\\#", "#")));
         }
 
         if (pieces.length >= 2) {
-          keywordOldToken.put(keyword, pieces[1]);
+          keywordOldToken.put(keywords.get(position).getKeyword(), pieces[1]);
+          keywords.get(position).setType(pieces[1]);
         }
-
         if (pieces.length >= 3) {
-          parseHTMLReferenceFileName(pieces[2], keyword);
+          parseHTMLReferenceFileName(pieces[2],
+                                     keywords.get(position).getKeyword());
+          keywords.get(position).setType("FUNCTION");
         }
         if (pieces.length >= 4) {
-          parseRSyntaxTextAreaTokenType(pieces[3], keyword);
+          keywords.get(position)
+              .setType(parseRSyntaxTextAreaTokenType(pieces[3], keywords
+                  .get(position).getKeyword()));
         }
-      }
 
+        position++;
+      }
       fillMissingTokenType();
     } finally {
       IOUtils.closeQuietly(reader);
@@ -147,20 +168,19 @@ public class PdeKeywords {
       if (!keywordTokenTypeAsString.containsKey(keyword)) {
         if ("KEYWORD1".equals(oldTokenEntry.getValue())) {
           parseRSyntaxTextAreaTokenType("DATA_TYPE", keyword);
-        }
-        else if ("LITERAL1".equals(oldTokenEntry.getValue())) {      
+        } else if ("LITERAL1".equals(oldTokenEntry.getValue())) {
           parseRSyntaxTextAreaTokenType("RESERVED_WORD_2", keyword);
-        }
-        else {
+        } else {
           parseRSyntaxTextAreaTokenType("FUNCTION", keyword);
         }
       }
     }
   }
 
-  private void parseRSyntaxTextAreaTokenType(String tokenTypeAsString, String keyword) {
+  private String parseRSyntaxTextAreaTokenType(String tokenTypeAsString,
+                                               String keyword) {
     if (!ALPHA.matcher(keyword).find()) {
-      return;
+      return "";
     }
 
     if (KNOWN_TOKEN_TYPES.containsKey(tokenTypeAsString)) {
@@ -170,6 +190,7 @@ public class PdeKeywords {
       keywordTokenType.put(keyword, TokenTypes.FUNCTION);
       keywordTokenTypeAsString.put(keyword, "FUNCTION");
     }
+    return keywordTokenTypeAsString.get(keyword);
   }
 
   private void parseHTMLReferenceFileName(String piece, String keyword) {
@@ -189,5 +210,9 @@ public class PdeKeywords {
 
   public int getTokenType(char[] array, int start, int end) {
     return keywordTokenType.get(array, start, end);
+  }
+
+  public ArrayList<KeywordModel> getArrayKeyWords() {
+    return keywords;
   }
 }

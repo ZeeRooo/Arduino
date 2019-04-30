@@ -31,6 +31,7 @@
 package processing.app.syntax;
 
 import java.awt.Color;
+import org.fife.ui.autocomplete.Completion;
 import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.Insets;
@@ -41,6 +42,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -52,6 +55,13 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Segment;
 
 import org.apache.commons.compress.utils.IOUtils;
+import org.fife.ui.autocomplete.AutoCompletion;
+import org.fife.ui.autocomplete.AutoCompletionEvent;
+import org.fife.ui.autocomplete.AutoCompletionListener;
+import org.fife.ui.autocomplete.BasicCompletion;
+import org.fife.ui.autocomplete.CompletionProvider;
+import org.fife.ui.autocomplete.DefaultCompletionProvider;
+import org.fife.ui.autocomplete.ShorthandCompletion;
 import org.fife.ui.rsyntaxtextarea.LinkGenerator;
 import org.fife.ui.rsyntaxtextarea.LinkGeneratorResult;
 import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;
@@ -69,18 +79,21 @@ import processing.app.PreferencesData;
 import processing.app.helpers.OSUtils;
 
 /**
- * Arduino Sketch code editor based on RSyntaxTextArea (http://fifesoft.com/rsyntaxtextarea)
+ * Arduino Sketch code editor based on RSyntaxTextArea
+ * (http://fifesoft.com/rsyntaxtextarea)
  *
  * @author Ricardo JL Rufino (ricardo@criativasoft.com.br)
  * @since 1.6.4
  */
 public class SketchTextArea extends RSyntaxTextArea {
 
-  private final static Logger LOG = Logger.getLogger(SketchTextArea.class.getName());
+  private final static Logger LOG = Logger
+      .getLogger(SketchTextArea.class.getName());
 
   private PdeKeywords pdeKeywords;
 
-  public SketchTextArea(RSyntaxDocument document, PdeKeywords pdeKeywords) throws IOException {
+  public SketchTextArea(RSyntaxDocument document, PdeKeywords pdeKeywords)
+      throws IOException {
     super(document);
     this.pdeKeywords = pdeKeywords;
     installFeatures();
@@ -90,6 +103,25 @@ public class SketchTextArea extends RSyntaxTextArea {
   public void setKeywords(PdeKeywords keywords) {
     pdeKeywords = keywords;
     setLinkGenerator(new DocLinkGenerator(pdeKeywords));
+  }
+
+  public void autoCompleteText() {
+    AutoCompletion autoCompletion = new AutoCompletion(getDefaultCompletionProvider());
+    autoCompletion.install(this);
+  }
+
+  private DefaultCompletionProvider getDefaultCompletionProvider() {
+    DefaultCompletionProvider defaultCompletionProvider = new DefaultCompletionProvider();
+
+    List<Completion> list = new LinkedList<>();
+
+    for (short position = 0 ; position < pdeKeywords.getArrayKeyWords().size() ; position++) {
+      list.add(new BasicCompletion(defaultCompletionProvider, pdeKeywords.getArrayKeyWords().get(position).getKeyword(), pdeKeywords.getArrayKeyWords().get(position).getType()));
+    }
+
+    defaultCompletionProvider.addCompletions(list);
+
+    return defaultCompletionProvider;
   }
 
   private void installFeatures() throws IOException {
@@ -103,7 +135,8 @@ public class SketchTextArea extends RSyntaxTextArea {
   private void setTheme(String name) throws IOException {
     InputStream defaultXmlInputStream = null;
     try {
-      defaultXmlInputStream = processing.app.Theme.getThemeResource("theme/syntax/" + name + ".xml").getInputStream();
+      defaultXmlInputStream = processing.app.Theme
+          .getThemeResource("theme/syntax/" + name + ".xml").getInputStream();
       Theme theme = Theme.load(defaultXmlInputStream);
       theme.apply(this);
     } finally {
@@ -112,14 +145,18 @@ public class SketchTextArea extends RSyntaxTextArea {
 
     setEOLMarkersVisible(processing.app.Theme.getBoolean("editor.eolmarkers"));
     setBackground(processing.app.Theme.getColor("editor.bgcolor"));
-    setHighlightCurrentLine(processing.app.Theme.getBoolean("editor.linehighlight"));
-    setCurrentLineHighlightColor(processing.app.Theme.getColor("editor.linehighlight.color"));
+    setHighlightCurrentLine(processing.app.Theme
+        .getBoolean("editor.linehighlight"));
+    setCurrentLineHighlightColor(processing.app.Theme
+        .getColor("editor.linehighlight.color"));
     setCaretColor(processing.app.Theme.getColor("editor.caret.color"));
     setSelectedTextColor(null);
     setUseSelectedTextColor(false);
     setSelectionColor(processing.app.Theme.getColor("editor.selection.color"));
-    setMatchedBracketBorderColor(processing.app.Theme.getColor("editor.brackethighlight.color"));
-    setHyperlinkForeground((Color) processing.app.Theme.getStyledFont("url", getFont()).get("color"));
+    setMatchedBracketBorderColor(processing.app.Theme
+        .getColor("editor.brackethighlight.color"));
+    setHyperlinkForeground((Color) processing.app.Theme
+        .getStyledFont("url", getFont()).get("color"));
 
     setSyntaxTheme(TokenTypes.DATA_TYPE, "data_type");
     setSyntaxTheme(TokenTypes.FUNCTION, "function");
@@ -134,7 +171,8 @@ public class SketchTextArea extends RSyntaxTextArea {
     setSyntaxTheme(TokenTypes.COMMENT_MULTILINE, "comment2");
     setSyntaxTheme(TokenTypes.LITERAL_BOOLEAN, "literal_boolean");
     setSyntaxTheme(TokenTypes.LITERAL_CHAR, "literal_char");
-    setSyntaxTheme(TokenTypes.LITERAL_STRING_DOUBLE_QUOTE, "literal_string_double_quote");
+    setSyntaxTheme(TokenTypes.LITERAL_STRING_DOUBLE_QUOTE,
+                   "literal_string_double_quote");
     setSyntaxTheme(TokenTypes.PREPROCESSOR, "preprocessor");
 
     setColorForToken(TokenTypes.IDENTIFIER, "editor.fgcolor");
@@ -150,7 +188,8 @@ public class SketchTextArea extends RSyntaxTextArea {
   private void setSyntaxTheme(int tokenType, String id) {
     Style style = getSyntaxScheme().getStyle(tokenType);
 
-    Map<String, Object> styledFont = processing.app.Theme.getStyledFont(id, style.font);
+    Map<String, Object> styledFont = processing.app.Theme
+        .getStyledFont(id, style.font);
     style.foreground = (Color) styledFont.get("color");
     style.font = (Font) styledFont.get("font");
 
@@ -184,7 +223,8 @@ public class SketchTextArea extends RSyntaxTextArea {
     }
 
     @Override
-    public LinkGeneratorResult isLinkAtOffset(RSyntaxTextArea textArea, final int offs) {
+    public LinkGeneratorResult isLinkAtOffset(RSyntaxTextArea textArea,
+                                              final int offs) {
       Token token = textArea.modelToToken(offs);
       if (token == null) {
         return null;
@@ -192,7 +232,9 @@ public class SketchTextArea extends RSyntaxTextArea {
 
       String reference = pdeKeywords.getReference(token.getLexeme());
 
-      if (reference != null || (token.getType() == TokenTypes.DATA_TYPE || token.getType() == TokenTypes.VARIABLE || token.getType() == TokenTypes.FUNCTION)) {
+      if (reference != null || (token.getType() == TokenTypes.DATA_TYPE
+                                || token.getType() == TokenTypes.VARIABLE
+                                || token.getType() == TokenTypes.FUNCTION)) {
 
         return new LinkGeneratorResult() {
 
@@ -217,10 +259,10 @@ public class SketchTextArea extends RSyntaxTextArea {
     }
   }
 
-
   /**
-   * Handles http hyperlinks.
-   * NOTE (@Ricardo JL Rufino): Workaround to enable hyperlinks by default: https://github.com/bobbylight/RSyntaxTextArea/issues/119
+   * Handles http hyperlinks. NOTE (@Ricardo JL Rufino): Workaround to enable
+   * hyperlinks by default:
+   * https://github.com/bobbylight/RSyntaxTextArea/issues/119
    */
   private class SketchTextAreaMouseListener extends RTextAreaMutableCaretEvent {
 
@@ -234,10 +276,11 @@ public class SketchTextArea extends RSyntaxTextArea {
     }
 
     /**
-     * Notifies all listeners that have registered interest for notification
-     * on this event type.  The listener list is processed last to first.
+     * Notifies all listeners that have registered interest for notification on
+     * this event type. The listener list is processed last to first.
      *
-     * @param e The event to fire.
+     * @param e
+     *          The event to fire.
      * @see EventListenerList
      */
     private void fireHyperlinkUpdate(HyperlinkEvent e) {
@@ -274,7 +317,8 @@ public class SketchTextArea extends RSyntaxTextArea {
         } catch (MalformedURLException mue) {
           desc = mue.getMessage();
         }
-        he = new HyperlinkEvent(SketchTextArea.this, HyperlinkEvent.EventType.ACTIVATED, url, desc);
+        he = new HyperlinkEvent(SketchTextArea.this,
+            HyperlinkEvent.EventType.ACTIVATED, url, desc);
       }
 
       return he;
@@ -299,9 +343,10 @@ public class SketchTextArea extends RSyntaxTextArea {
         return;
       }
 
-//      LinkGenerator linkGenerator = getLinkGenerator();
+      // LinkGenerator linkGenerator = getLinkGenerator();
 
-      // GitHub issue RSyntaxTextArea/#25 - links identified at "edges" of editor
+      // GitHub issue RSyntaxTextArea/#25 - links identified at "edges" of
+      // editor
       // should not be activated if mouse is in margin insets.
       insets = getInsets(insets);
       if (insets != null) {
@@ -323,41 +368,41 @@ public class SketchTextArea extends RSyntaxTextArea {
       }
       Cursor c2;
       if (t != null && t.isHyperlink()) {
-        if (hoveredOverLinkOffset == -1 ||
-          hoveredOverLinkOffset != t.getOffset()) {
+        if (hoveredOverLinkOffset == -1
+            || hoveredOverLinkOffset != t.getOffset()) {
           hoveredOverLinkOffset = t.getOffset();
           repaint();
         }
         c2 = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
       }
-//      else if (t!=null && linkGenerator!=null) {
-//        int offs = viewToModel(e.getPoint());
-//        LinkGeneratorResult newResult = linkGenerator.
-//            isLinkAtOffset(SketchTextArea.this, offs);
-//        if (newResult!=null) {
-//          // Repaint if we're at a new link now.
-//          if (linkGeneratorResult==null ||
-//              !equal(newResult, linkGeneratorResult)) {
-//            repaint();
-//          }
-//          linkGeneratorResult = newResult;
-//          hoveredOverLinkOffset = t.getOffset();
-//          c2 = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
-//        }
-//        else {
-//          // Repaint if we've moved off of a link.
-//          if (linkGeneratorResult!=null) {
-//            repaint();
-//          }
-//          c2 = Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR);
-//          hoveredOverLinkOffset = -1;
-//          linkGeneratorResult = null;
-//        }
-//      }
+      // else if (t!=null && linkGenerator!=null) {
+      // int offs = viewToModel(e.getPoint());
+      // LinkGeneratorResult newResult = linkGenerator.
+      // isLinkAtOffset(SketchTextArea.this, offs);
+      // if (newResult!=null) {
+      // // Repaint if we're at a new link now.
+      // if (linkGeneratorResult==null ||
+      // !equal(newResult, linkGeneratorResult)) {
+      // repaint();
+      // }
+      // linkGeneratorResult = newResult;
+      // hoveredOverLinkOffset = t.getOffset();
+      // c2 = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
+      // }
+      // else {
+      // // Repaint if we've moved off of a link.
+      // if (linkGeneratorResult!=null) {
+      // repaint();
+      // }
+      // c2 = Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR);
+      // hoveredOverLinkOffset = -1;
+      // linkGeneratorResult = null;
+      // }
+      // }
       else {
         c2 = Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR);
         hoveredOverLinkOffset = -1;
-        //  linkGeneratorResult = null;
+        // linkGeneratorResult = null;
       }
       if (getCursor() != c2) {
         setCursor(c2);
@@ -385,8 +430,10 @@ public class SketchTextArea extends RSyntaxTextArea {
   }
 
   private void fixCtrlDeleteBehavior() {
-    int modifier = OSUtils.isMacOS()? InputEvent.ALT_MASK : InputEvent.CTRL_MASK;
+    int modifier = OSUtils.isMacOS() ? InputEvent.ALT_MASK
+                                     : InputEvent.CTRL_MASK;
     KeyStroke keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, modifier);
-    getInputMap().put(keyStroke, SketchTextAreaEditorKit.rtaDeleteNextWordAction);
+    getInputMap().put(keyStroke,
+                      SketchTextAreaEditorKit.rtaDeleteNextWordAction);
   }
 }
