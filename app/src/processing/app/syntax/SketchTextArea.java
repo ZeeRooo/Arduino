@@ -114,9 +114,16 @@ public class SketchTextArea extends RSyntaxTextArea {
     DefaultCompletionProvider defaultCompletionProvider = new DefaultCompletionProvider();
 
     List<Completion> list = new LinkedList<>();
-
+    String type, autocomplete;
+    
     for (short position = 0 ; position < pdeKeywords.getArrayKeyWords().size() ; position++) {
-      list.add(new BasicCompletion(defaultCompletionProvider, pdeKeywords.getArrayKeyWords().get(position).getKeyword(), pdeKeywords.getArrayKeyWords().get(position).getType()));
+      type = pdeKeywords.getArrayKeyWords().get(position).getType();
+      autocomplete = pdeKeywords.getArrayKeyWords().get(position).getKeyword();
+      
+      if (type != null && (type.equals("FUNCTION") || type.equals("KEYWORD2")))
+        autocomplete += "();";
+     
+      list.add(new BasicCompletion(defaultCompletionProvider, autocomplete, type));
     }
 
     defaultCompletionProvider.addCompletions(list);
